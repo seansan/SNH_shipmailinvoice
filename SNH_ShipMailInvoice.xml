@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <SNH_ShipMailInvoice>
+            <active>true</active>
+            <codePool>local</codePool>
+		</SNH_ShipMailInvoice>    
+	</modules>
+</config>

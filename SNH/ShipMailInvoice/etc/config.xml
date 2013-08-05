@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <SNH_ShipMailInvoice>
+            <version>0.1.0</version>
+        </SNH_ShipMailInvoice>
+    </modules>
+
+	<global>
+		<events>
+			<!-- Event to attach observer to -->
+			<core_block_abstract_to_html_before>
+				<observers>
+				<SNH_ShipMailInvoice>
+					<type>singleton</type>
+					<!-- Observer location (e.g. SW/GridExample/Model) -->
+					<class>SNH_ShipMailInvoice_Model_Observer</class>
+					<!-- Function to call -->
+					<method>addMassAction</method>
+				</SNH_ShipMailInvoice>
+				</observers>
+			</core_block_abstract_to_html_before>
+		</events>
+	
+	      
+	</global>
+
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <!-- Override Adminhtml module here. -->
+                        <SNH_ShipMailInvoice_Adminhtml before="Mage_Adminhtml">SNH_ShipMailInvoice_Adminhtml</SNH_ShipMailInvoice_Adminhtml>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+
+	
+
+</config>
+
