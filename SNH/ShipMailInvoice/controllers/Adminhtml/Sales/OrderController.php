@@ -2,7 +2,7 @@
 /**
  * Adminhtml sales orders controller extension
  *
- * @author      Magento Core Team <core@magentocommerce.com>
+ * @author      SNH
  */
 
 
