@@ -99,7 +99,7 @@ public function shipinvoiceAction()
 				// API needs OrderIncrementId, so change
 				$lastOrderId = $order->getIncrementId();
 				// true sends email
-				$shipmentId = $shipment->create($lastOrderId, array(), 'Shipment created through ShipMailInvoice', true, false);
+				$shipmentId = $shipment->create($lastOrderId, array(), 'Shipment created through ShipMailInvoice', false, false);
 				$order->addStatusHistoryComment('Shipment created by ShipMailInvoice', false);
 				$shipped++;
 				} catch (Exception $e) { Mage::logException($e); }
