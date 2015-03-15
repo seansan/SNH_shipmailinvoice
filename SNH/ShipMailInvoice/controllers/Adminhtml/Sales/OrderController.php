@@ -11,132 +11,88 @@ require_once "Mage/Adminhtml/controllers/Sales/OrderController.php";
 class SNH_ShipMailInvoice_Adminhtml_Sales_OrderController extends Mage_Adminhtml_Sales_OrderController
 {
 
-    public function shipmailinvoiceAction()
-    {
-    $orderIds = $this->getRequest()->getPost('order_ids', array());
+public function shipinvoiceAction() {
+  $this->_shipmailinvoice(false, true);
+  }
 
-	$size = count($orderIds);
-    $shipped = 0;
-	$not_shipped = 0;
-	$invoiced = 0;
+public function shipmailinvoiceAction() {
+  $this->_shipmailinvoice(true, true);
+  }
 
-	if (!empty($orderIds)) {
+public function pdfinvoiceAction() {
+  $this->_shipmailinvoice(false, false);
+  }
+
+public function _shipmailinvoice($email=true, $ship=true) {
+    
+	$orderIds = $this->getRequest()->getPost('order_ids', array());
+
+    $cnt_Orders		= count($orderIds);
+    $cnt_Shipments	= 0;
+    $cnt_Invoices	= 0;
+
+    if (!empty($orderIds)) {
 		foreach ($orderIds as $orderId) {
-
-			// SNH 26.1.12 Call to shipment and send email (step 1 and 2)
+			if (!$ship) continue;
 			$order = Mage::getModel('sales/order')->load($orderId);
-
-			if($order->canShip()) {
+			//$order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
+			//$itemQty = (int)$order->getItemsCollection()->count();
+			//$shipment = $order->prepareShipment($itemQty);
+			//$shipment = Mage::getModel('sales/service_order', $order)->prepareShipment($itemQty);
+			$shipment = $order->prepareShipment();
+			if ($shipment && $order->canShip()) {
+				$shipment->register();
+				if ($email) $shipment->setEmailSent($email);
+				$shipment->getOrder()->setIsInProcess(true);
 				try {
-				$itemQty = $order->getItemsCollection()->count();
-				$shipment = Mage::getModel('sales/service_order', $order)->prepareShipment($itemQty);
-				$shipment = new Mage_Sales_Model_Order_Shipment_Api();
-				// API needs OrderIncrementId, so change
-				$lastOrderId = $order->getIncrementId();
-				$order->setIsInProcess(true);
-				// true sends email
-				$shipmentId = $shipment->create($lastOrderId, array(), 'Shipment created through ShipMailInvoice', true, false);
-				$order->addStatusHistoryComment('Shipment created by ShipMailInvoice', false);
-				$shipped++;
-				$order->save();
-				} catch (Exception $e) { Mage::logException($e); }
+					$transactionSave = Mage::getModel('core/resource_transaction')
+					->addObject($shipment)
+					->addObject($shipment->getOrder())
+					->save();
+					if ($email) $shipment->sendEmail($email, '');
+					$cnt_Shipments++;
+				} catch (Mage_Core_Exception $e) {
+					$this->_getSession()->addError($e, 'Cannot create shipment');
+				}
+				unset($shipment);
 			} else {
-				$not_shipped++;
+				if ($email) { $shipment->sendEmail($email, '')->setEmailSent(true)->save(); }
+				$cnt_Shipments++;
 			}
 
-			// SNH 26.1.12 Call to invoice (step 3)
-			$invoices = Mage::getResourceModel('sales/order_invoice_collection')->setOrderFilter($orderId)->load();
-			try {
-				if ($invoices->getSize() > 0) {
-					$invoiced++;
-					if (!isset($pdf)){
-					$pdf = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
-					} else {
-					$pages = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
-					$pdf->pages = array_merge ($pdf->pages, $pages->pages);
-					}
-				}
-			} catch (Exception $e) { Mage::logException($e); }
-		}
-	
-	} else {
-
-	$this->_getSession()->addError(Mage::helper('sales')->__('No shipments and invoices created, none selected.'));
-
-	}
-
-	if (!empty($invoiced)) {
-		// Wish we could send some feedback on how many were shipped and invoiced (refresh the sceen and then download)
-		return $this->_prepareDownloadResponse('invoice'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.pdf', $pdf->render(), 'application/pdf');
-	} else {
-		$this->_getSession()->addError(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Cannot create all invoices.', $shipped, $size));
-	}
-
-	$this->_redirect('*/*/');
-
-	}
-
-public function shipinvoiceAction()
-    {
-    $orderIds = $this->getRequest()->getPost('order_ids', array());
-
-	$size = count($orderIds);
-    $shipped = 0;
-	$not_shipped = 0;
-	$invoiced = 0;
-
-	if (!empty($orderIds)) {
-		foreach ($orderIds as $orderId) {
-
-			// SNH 26.1.12 Call to shipment and send email (step 1 and 2)
-			$order = Mage::getModel('sales/order')->load($orderId);
-
-			if($order->canShip()) {
-				try {
-				$itemQty = $order->getItemsCollection()->count();
-				$shipment = Mage::getModel('sales/service_order', $order)->prepareShipment($itemQty);
-				$shipment = new Mage_Sales_Model_Order_Shipment_Api();
-				// API needs OrderIncrementId, so change
-				$lastOrderId = $order->getIncrementId();
-				// true sends email
-				$shipmentId = $shipment->create($lastOrderId, array(), 'Shipment created through ShipMailInvoice', false, false);
-				$order->addStatusHistoryComment('Shipment created by ShipMailInvoice', false);
-				$shipped++;
-				} catch (Exception $e) { Mage::logException($e); }
-			} else {
-				$not_shipped++;
+			if ($cnt_Shipments > 0 && $cnt_Shipments < $cnt_Orders) {
+			 $this->_getSession()->addNotice(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Not all shipments were sent.', $cnt_Shipments, $cnt_Orders));
 			}
 
-			// SNH 26.1.12 Call to invoice (step 3)
-			$invoices = Mage::getResourceModel('sales/order_invoice_collection')->setOrderFilter($orderId)->load();
-			try {
-				if ($invoices->getSize() > 0) {
-					$invoiced++;
-					if (!isset($pdf)){
-					$pdf = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
-					} else {
-					$pages = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
-					$pdf->pages = array_merge ($pdf->pages, $pages->pages);
-					}
-				}
-			} catch (Exception $e) { Mage::logException($e); }
+	}
+
+	$invoices = Mage::getResourceModel('sales/order_invoice_collection')
+	->setOrderFilter($orderIds)
+	->load();
+	if ($invoices->getSize() > 0) {
+		$cnt_Invoices++;
+		if (!isset($pdf)) {
+			$pdf = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
+		} else {
+			$pages = Mage::getModel('sales/order_pdf_invoice')->getPdf($invoices);
+			$pdf->pages = array_merge($pdf->pages, $pages->pages);
 		}
-	
+	}
+
+	if ($cnt_Invoices > 0) {
+		return $this->_prepareDownloadResponse('invoices_' . Mage::getSingleton('core/date')->date('Y-m-d_H-i-s') . '.pdf', $pdf->render(),'application/pdf');
 	} else {
-
-	$this->_getSession()->addError(Mage::helper('sales')->__('No shipments and invoices created, none selected.'));
-
+		$this->_getSession()->addError($this->__('There are no printable documents related to selected orders.'));
+		$this->_redirect('adminhtml/sales_order');
 	}
 
-	if (!empty($invoiced)) {
-		return $this->_prepareDownloadResponse('invoice'.Mage::getSingleton('core/date')->date('Y-m-d_H-i-s').'.pdf', $pdf->render(), 'application/pdf');
-		// Wish we could send some feedback on how many were shipped and invoiced
 	} else {
-		$this->_getSession()->addError(Mage::helper('sales')->__('Sent %s shipments of %s requested (no e-mail). Cannot create all invoices.', $shipped, $size));
+	$this->_getSession()->addError($this->__('There are no items selected.'));
+	$this->_redirect('adminhtml/sales_order');
 	}
 
-	$this->_redirect('*/*/');
-
-	}
-
+	$this->_redirect('adminhtml/sales_order');
+	//$this->_redirect('*/*/');
 }
+ 
+}    
