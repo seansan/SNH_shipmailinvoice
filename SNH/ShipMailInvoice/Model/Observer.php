@@ -19,6 +19,11 @@ class SNH_ShipMailInvoice_Model_Observer
 						'url' => $block->getUrl('*/*/shipinvoice'),
                     )
                 );
+				$block->addItem('pdf_invoice', array(
+                        'label' => Mage::helper('sales')->__('Only print invoices'),
+						'url' => $block->getUrl('*/*/pdfinvoice'),
+                    )
+                );
             }
         }
     }
