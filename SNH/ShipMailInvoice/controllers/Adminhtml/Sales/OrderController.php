@@ -23,6 +23,18 @@ public function pdfinvoiceAction() {
   $this->_shipmailinvoice(false, false);
   }
 
+public function isAlreadyShipped() {
+        $invoiced    = (float)$this->getQtyInvoiced();       
+        $shipped     = (float)$this->getQtyShipped();
+        $refunded    = (float)$this->getQtyRefunded();
+        $actuallyOrdered = $ordered - $canceled - $refunded;
+        if ($shipped && $invoiced && ($actuallyOrdered == $shipped)) {
+            return true;
+        } else {
+          return false:
+        }
+}
+
 public function _shipmailinvoice($email=true, $ship=true) {
     
 	$orderIds = $this->getRequest()->getPost('order_ids', array());
@@ -39,6 +51,10 @@ public function _shipmailinvoice($email=true, $ship=true) {
 		foreach ($orderIds as $orderId) {
 			if (!$ship) continue;
 			$order = Mage::getModel('sales/order')->load($orderId);
+			if (isAlreadyShipped($order)) {
+				$this->_getSession()->addNotice(Mage::helper('sales')->__('Order %s has already been shipped (completely).", $orderId));
+				continue;
+			}
 			//$order = Mage::getModel('sales/order')->loadByIncrementId($orderId);
 			//$itemQty = (int)$order->getItemsCollection()->count();
 			//$shipment = $order->prepareShipment($itemQty);
@@ -67,9 +83,8 @@ public function _shipmailinvoice($email=true, $ship=true) {
 		}
 
     if ($cnt_Shipments > 0 && $cnt_Shipments < $cnt_Orders) {
-     $this->_getSession()->addNotice(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Not all shipments were sent.', $cnt_Shipments, $cnt_Orders));
-    }
-	
+     $this->_getSession()->addNotice(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Not all shipments were sent.', $cnt_Shipments, $cnt_Orders));    }
+		
   $invoices = Mage::getResourceModel('sales/order_invoice_collection')
 	->setOrderFilter($orderIds)
 	->load();
