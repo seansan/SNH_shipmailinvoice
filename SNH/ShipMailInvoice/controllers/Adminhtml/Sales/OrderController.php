@@ -31,7 +31,7 @@ public function isAlreadyShipped() {
         if ($shipped && $invoiced && ($actuallyOrdered == $shipped)) {
             return true;
         } else {
-          return false:
+          return false;
         }
 }
 
