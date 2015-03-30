@@ -51,7 +51,7 @@ public function _shipmailinvoice($email=true, $ship=true) {
 		foreach ($orderIds as $orderId) {
 			if (!$ship) continue;
 			$order = Mage::getModel('sales/order')->load($orderId);
-			if (isAlreadyShipped($order)) {
+			if ($this->isAlreadyShipped($order)) {
 				$this->_getSession()->addNotice(Mage::helper('sales')->__('Order %s has already been shipped (completely).', $orderId));
 				continue;
 			}
