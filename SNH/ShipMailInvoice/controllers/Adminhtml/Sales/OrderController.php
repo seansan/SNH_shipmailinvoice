@@ -31,7 +31,11 @@ public function _shipmailinvoice($email=true, $ship=true) {
     $cnt_Shipments	= 0;
     $cnt_Invoices	= 0;
 
-    if (!empty($orderIds)) {
+    if (empty($orderIds)) {
+      $this->_getSession()->addNotice('No orders selected. Nothing to do.');
+      $this->_redirect('adminhtml/sales_order');
+    }
+    
 		foreach ($orderIds as $orderId) {
 			if (!$ship) continue;
 			$order = Mage::getModel('sales/order')->load($orderId);
@@ -42,14 +46,14 @@ public function _shipmailinvoice($email=true, $ship=true) {
 			$shipment = $order->prepareShipment();
 			if ($shipment && $order->canShip()) {
 				$shipment->register();
-				if ($email) $shipment->setEmailSent($email);
+				if ($email) { $shipment->setEmailSent($email); }
 				$shipment->getOrder()->setIsInProcess(true);
 				try {
 					$transactionSave = Mage::getModel('core/resource_transaction')
 					->addObject($shipment)
 					->addObject($shipment->getOrder())
 					->save();
-					if ($email) $shipment->sendEmail($email, '');
+					if ($email) { $shipment->sendEmail($email, ''); }
 					$cnt_Shipments++;
 				} catch (Mage_Core_Exception $e) {
 					$this->_getSession()->addError($e, 'Cannot create shipment');
@@ -60,13 +64,13 @@ public function _shipmailinvoice($email=true, $ship=true) {
 				$cnt_Shipments++;
 			}
 
-			if ($cnt_Shipments > 0 && $cnt_Shipments < $cnt_Orders) {
-			 $this->_getSession()->addNotice(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Not all shipments were sent.', $cnt_Shipments, $cnt_Orders));
-			}
+		}
 
-	}
-
-	$invoices = Mage::getResourceModel('sales/order_invoice_collection')
+    if ($cnt_Shipments > 0 && $cnt_Shipments < $cnt_Orders) {
+     $this->_getSession()->addNotice(Mage::helper('sales')->__('Sent %s shipments and notications of %s requested. Not all shipments were sent.', $cnt_Shipments, $cnt_Orders));
+    }
+	
+  $invoices = Mage::getResourceModel('sales/order_invoice_collection')
 	->setOrderFilter($orderIds)
 	->load();
 	if ($invoices->getSize() > 0) {
