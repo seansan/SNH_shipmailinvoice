@@ -105,11 +105,6 @@ public function _shipmailinvoice($email=true, $ship=true) {
 		$this->_redirect('adminhtml/sales_order');
 	}
 
-	} else {
-	$this->_getSession()->addError($this->__('There are no items selected.'));
-	$this->_redirect('adminhtml/sales_order');
-	}
-
 	$this->_redirect('adminhtml/sales_order');
 	//$this->_redirect('*/*/');
 }
