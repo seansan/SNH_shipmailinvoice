@@ -23,10 +23,10 @@ public function pdfinvoiceAction() {
   $this->_shipmailinvoice(false, false);
   }
 
-public function isAlreadyShipped() {
-        $invoiced    = (float)$this->getQtyInvoiced();       
-        $shipped     = (float)$this->getQtyShipped();
-        $refunded    = (float)$this->getQtyRefunded();
+public function isAlreadyShipped($this_order) {
+        $invoiced    = (float)$this_order->getQtyInvoiced();       
+        $shipped     = (float)$this_order->getQtyShipped();
+        $refunded    = (float)$this_order->getQtyRefunded();
         $actuallyOrdered = $ordered - $canceled - $refunded;
         if ($shipped && $invoiced && ($actuallyOrdered == $shipped)) {
             return true;
