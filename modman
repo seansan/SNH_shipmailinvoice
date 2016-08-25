@@ -1,3 +1,3 @@
 # SNH_shipmailinvoice
-SNH				app/code/local/SNH/
-SNH_ShipMailInvoice.xml		app/etc/modules/SNH_ShipMailInvoice.xml
+SNH/SNH_shipmailinvoice app/code/local/SNH/SNH_shipmailinvoice
+SNH_ShipMailInvoice.xml app/etc/modules/SNH_ShipMailInvoice.xml
